@@ -5,6 +5,10 @@
 
 #define NODE_NUMBER 16
 
+#define RD PD_8
+#define TD PB_9
+#define FREQUENCY 1000000 //in Hz
+
 #define TPDO1 0x03
 #define RPDO1 0x04
 #define TPDO2 0x05
