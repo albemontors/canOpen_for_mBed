@@ -7,6 +7,11 @@ Jose and Alberto library for canOpen CIA301 nearly spec
 To get started call the function at the beginning of your main.c:
 
     #include "JAcan.h"
+    
+Now go to "JAcan.h" and edit the PINOUT RD and TD for your own board.
+Also modify the FREQUENCY if needed.
+NODE_NUMBER referes to the amount of nodes that have PDOs exchange,
+it will be addressed later.
 
 Declare the following function above your main:
 
@@ -30,7 +35,7 @@ Declare the following function above your main:
         
     }
     
-Now call can_init() at the beginning of your code and you can interface is working.
+call "can_init()" at the beginning of your code and you can interface is now working.
 
 
 ================================================
