@@ -4,9 +4,9 @@ Jose and Alberto library for canOpen CIA301 nearly spec
                  INIT TUTORIAL
 ================================================
 
-To get started call the function at the beginning of your main:
+To get started call the function at the beginning of your main.c:
 
-    can_init();
+    #include "JAcan.h"
 
 Declare the following function above your main:
 
@@ -29,6 +29,8 @@ Declare the following function above your main:
         can_setup(PDO_Dictionary_init);
         
     }
+    
+Now call can_init() at the beginning of your code and you can interface is working.
 
 
 ================================================
