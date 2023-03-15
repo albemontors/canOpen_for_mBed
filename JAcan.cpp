@@ -8,7 +8,7 @@ Thread sender;
 EventFlags dump;
 Mail<CANMessage, 16> inboundBox;
 Mail<CANMessage, 16> outboundBox;
-interface::CAN can(PB_8, PB_9, 1000000);
+interface::CAN can(RD, TD, FREQUENCY);
 
 PDO_Dictionary_Entry PDO_Dictionary[NODE_NUMBER];
 bool isMaster;
