@@ -1,5 +1,7 @@
 Jose and Alberto library for canOpen CIA301 nearly spec
 
+This is a work in progress but it is in running conditions as it is over here
+
 ================================================
                  INIT TUTORIAL
 ================================================
