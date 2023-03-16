@@ -13,15 +13,16 @@ interface::CAN can(RD, TD, FREQUENCY);
 PDO_Dictionary_Entry PDO_Dictionary[NODE_NUMBER];
 bool isMaster;
 
-bool verbose = 0; // set to 1 for debug purpose
+bool verbose = 1;
 
-void can_setup(PDO_Dictionary_Entry* PDO_Dictionary_init){
+void can_setup(PDO_Dictionary_Entry* PDO_Dictionary_init, bool isMaster_init){
 // ====== PROGRAM INIT SECTION ========// nothing needs touching below here
     can.attach(can_irq);
     can.monitor(0);
     dumper.start(can_dumper);
     receiver.start(can_sorter);
     sender.start(can_sender);
+    isMaster = isMaster_init;
     for(int i = 0; i < NODE_NUMBER; i++) PDO_Dictionary[i] = PDO_Dictionary_init[i];
     if(verbose) printf("(S) can_setup: Setup function have finished execution \n");
 }
@@ -38,7 +39,7 @@ void pdoHandler(CANMessage* inputMsg){
 
     CAN_Id id;
     id.raw = inputMsg->id;
-    if(isMaster != (id.bd.code % 2)) { if(verbose) printf("(!) pdoHandler: Invalid PDO received \n"); return; }
+    if(isMaster == (id.bd.code % 2)) { if(verbose) printf("(!) pdoHandler: Invalid PDO received \n"); return; }
 
     if(verbose) printf("(S) pdoHandler: Started PDO sorting routine \n");
     PDO_Data data;
@@ -146,7 +147,7 @@ void can_irq(){
 
 void pdoSender(CAN_Id id){
 
-    if(isMaster == (id.bd.code % 2)) { if(verbose) printf("(!) pdoSender: Invalid Request, no PDO sent \n"); return; }
+    if(isMaster != (id.bd.code % 2)) { if(verbose) printf("(!) pdoSender: Invalid Request, no PDO sent \n"); return; }
 
     CANMessage* outputMsg = outboundBox.try_alloc();
     if(!outputMsg) if(verbose) { printf("(!) pdoSender: Mail read error, no PDO sent \n"); return; }
@@ -165,7 +166,7 @@ void pdoSender(CAN_Id id){
 
 void pdoRequest(CAN_Id id){
     
-    if(isMaster == (id.bd.code % 2)) { if(verbose) printf("(!) pdoRequest: Invalid Request, no PDO sent \n"); return; }
+    if(isMaster != (id.bd.code % 2)) { if(verbose) printf("(!) pdoRequest: Invalid Request, no PDO sent \n"); return; }
     CANMessage* outputMsg = outboundBox.try_alloc();
     if(!outputMsg) if(verbose) { printf("(!) pdoRequest: Mail read error, no PDO sent \n"); return; }
     outputMsg->id = id.raw;
