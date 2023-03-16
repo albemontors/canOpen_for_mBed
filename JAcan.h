@@ -57,7 +57,7 @@ typedef struct {
 } PDO_Dictionary_Entry;
 
 void can_init();
-void can_setup(PDO_Dictionary_Entry* PDO_Dictionary_init);
+void can_setup(PDO_Dictionary_Entry* PDO_Dictionary_init, bool isMaster_init);
 CANMessage* can_allocate();
 void can_send(CANMessage* msg);
 void can_irq();
