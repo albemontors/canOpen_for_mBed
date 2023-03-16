@@ -155,7 +155,7 @@ void pdoSender(CAN_Id id){
         if(id.bd.id == PDO_Dictionary[i].id)
             for(int j = 0; j < 4; j++)
                 if(id.bd.code == PDO_Dictionary[i].pdo[j].code)
-                    for(int k = 0; k < NODE_NUMBER; k++) outputMsg->data[i] = PDO_Dictionary[i].pdo[j].data->u8[k];
+                    for(int k = 0; k < NODE_NUMBER; k++) outputMsg->data[k] = PDO_Dictionary[i].pdo[j].data->u8[k];
     outputMsg->id = id.raw;
     outputMsg->type = CANData;
     outputMsg->format = CANStandard;
