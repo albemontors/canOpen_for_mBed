@@ -41,7 +41,7 @@ Declare the following function somewhere in your "main.cpp", it can be below you
 
         // ==== END OF USER INIT SECTION ===== // 
         
-        can_setup(PDO_Dictionary_init);
+        can_setup(PDO_Dictionary_init, isMaster_init);
         
     }
     
