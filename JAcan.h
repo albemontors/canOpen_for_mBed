@@ -47,10 +47,8 @@ typedef struct{
 
 typedef struct {   
     uint8_t id;
-    PDO_Entry pdo[4];
+    PDO_Entry pdo[8];
 } PDO_Dictionary_Entry;
-
-typedef PDO_Data Node[4];
 
 void can_init();
 void can_setup(PDO_Dictionary_Entry* PDO_Dictionary_init);
