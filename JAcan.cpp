@@ -13,7 +13,7 @@ interface::CAN can(RD, TD, FREQUENCY);
 PDO_Dictionary_Entry PDO_Dictionary[NODE_NUMBER];
 bool isMaster;
 
-bool verbose = 1;
+bool verbose = 0; // set to 1 for debug purpose
 
 void can_setup(PDO_Dictionary_Entry* PDO_Dictionary_init){
 // ====== PROGRAM INIT SECTION ========// nothing needs touching below here
