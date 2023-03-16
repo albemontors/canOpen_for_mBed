@@ -2,10 +2,11 @@
 #define _JACAN_H
 
 #include "mbed.h"
+#include <cstdint>
 
 #define NODE_NUMBER 16
 
-#define RD PD_8
+#define RD PB_8
 #define TD PB_9
 #define FREQUENCY 1000000 //in Hz
 
@@ -17,6 +18,11 @@
 #define RPDO3 0x08
 #define TPDO4 0x09
 #define RPDO4 0x0A
+
+#define PDO1 0x03
+#define PDO2 0x05
+#define PDO3 0x07
+#define PDO4 0x09
 
 typedef struct {
     union{
@@ -65,5 +71,7 @@ void can_sender();
 void pdoHandler(CANMessage* inputMsg);
 //void sdoHandler(CANMessage* inputMsg);
 //void hbHandler(CANMessage* inputMsg);
+void pdoSender(CAN_Id id);
+void pdoRequest(CAN_Id id);
 
 #endif

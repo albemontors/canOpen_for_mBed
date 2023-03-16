@@ -36,41 +36,28 @@ void can_send(CANMessage* msg){
 
 void pdoHandler(CANMessage* inputMsg){
 
+    CAN_Id id;
+    id.raw = inputMsg->id;
+    if(!(isMaster && (id.bd.code % 2))) { if(verbose) printf("(!) pdoHandler: Invalid PDO received \n"); return; }
+
     if(verbose) printf("(S) pdoHandler: Started PDO sorting routine \n");
     PDO_Data data;
     if(!inputMsg->type){
-        for(int i = 0; i < NODE_NUMBER; i++) data.u8[i] = inputMsg->data[i];
-        CAN_Id id;
-        id.raw = inputMsg->id;
-        for(int i = 0; i < 4; i++)
+        for(int i = 0; i < 8; i++) data.u8[i] = inputMsg->data[i];
+        for(int i = 0; i < NODE_NUMBER; i++) // check the IDs
             if(id.bd.id == PDO_Dictionary[i].id)
-                for(int j = 0; j < 4; j++){
-                    if(id.bd.code == PDO_Dictionary[i].pdo[isMaster ? 2*j+1 : 2*j].code){
-                        PDO_Dictionary[i].pdo[isMaster ? 2*j+1 : 2*j].data->u64 = data.u64;
-                        if(verbose) printf("(S) PDOHandler: Memory has been updated with PDO data \n");
+                for(int j = 0; j < 8; j++){ // check the PDOs
+                    if(id.bd.code == PDO_Dictionary[i].pdo[j].code){
+                        PDO_Dictionary[i].pdo[j].data->u64 = data.u64;
+                        if(verbose) printf("(S) pdoHandler: Memory has been updated with PDO data \n");
                         break;
                     }
                 break;
                 }
     } else {
-        CAN_Id id;
-        id.raw = inputMsg->id;
-        for(int i = 0; i < NODE_NUMBER; i++)
-            if(id.bd.id == PDO_Dictionary[i].id)
-                for(int j = 0; j < 4; j++){
-                    if(id.bd.code == PDO_Dictionary[i].pdo[!isMaster ? 2*j+1 : 2*j].code){
-                        data.u64 = PDO_Dictionary[i].pdo[!isMaster ? 2*j+1 : 2*j].data->u64;
-                        break;
-                    }
-                    break;
-                }
         isMaster ? id.bd.code-- : id.bd.code++;
-        inputMsg->id = id.raw;
-        CANMessage* outputMsg = outboundBox.try_alloc_for(Kernel::wait_for_u32_forever);
-        *outputMsg = *inputMsg;
-        outputMsg->type = CANData;
-        outboundBox.put(outputMsg);
-        if(verbose) printf("(S) PDOHandler: A PDO have been routed after a RTR event \n");
+        if(verbose) printf("(S) pdoHandler: Responding an RTR request \n");
+        pdoSender(id);
     }
     if(verbose) printf("(S) pdoHandler: Ended PDO sorting routine \n");
 
@@ -82,7 +69,8 @@ void can_dumper(){
         dump.clear(1);
         CANMessage* msg = inboundBox.try_alloc_for(Kernel::wait_for_u32_forever);
         if(msg) can.read(*msg);
-        else if(verbose) printf("(!) PDOHandler: Mail alloc error \n");
+        else if(verbose) printf("(!) can_dumper: Mail alloc error \n");
+        if(verbose) printf("(S) can_sender: A frame has been received from the bus \n");
         inboundBox.put(msg);
     }
 }
@@ -153,4 +141,37 @@ void can_sender(){
 
 void can_irq(){
     dump.set(1);
+}
+
+void pdoSender(CAN_Id id){
+
+    if(!(isMaster && (id.bd.code % 2))) { if(verbose) printf("(!) pdoSender: Invalid Request, no PDO sent \n"); return; }
+
+    CANMessage* outputMsg = outboundBox.try_alloc();
+    if(!outputMsg) if(verbose) { printf("(!) pdoSender: Mail read error, no PDO sent \n"); return; }
+    for(int i = 0; i < 4; i++)
+        if(id.bd.id == PDO_Dictionary[i].id)
+            for(int j = 0; j < 4; j++)
+                if(id.bd.code == PDO_Dictionary[i].pdo[j].code)
+                    for(int k = 0; k < NODE_NUMBER; k++) outputMsg->data[i] = PDO_Dictionary[i].pdo[j].data->u8[k];
+    outputMsg->id = id.raw;
+    outputMsg->type = CANData;
+    outputMsg->format = CANStandard;
+    outboundBox.put(outputMsg);
+    if(verbose) printf("(!) pdoSender: A PDO has been routed \n");
+
+}
+
+void pdoRequest(CAN_Id id){
+    
+    if(isMaster && (id.bd.code % 2)) { if(verbose) printf("(!) pdoRequest: Invalid Request, no PDO sent \n"); return; }
+    CANMessage* outputMsg = outboundBox.try_alloc();
+    if(!outputMsg) if(verbose) { printf("(!) pdoRequest: Mail read error, no PDO sent \n"); return; }
+    outputMsg->id = id.raw;
+    outputMsg->type = CANRemote;
+    outputMsg->format = CANStandard;
+    outputMsg->len = 0;
+    outboundBox.put(outputMsg);
+    if(verbose) printf("(!) pdoRequest: A PDO has been routed \n");
+
 }
