@@ -164,7 +164,7 @@ void pdoSender(CAN_Id id){
 
 void pdoRequest(CAN_Id id){
     
-    if(isMaster xor (id.bd.code % 2)) { if(verbose) printf("(!) pdoRequest: Invalid Request, no PDO sent \n"); return; }
+    if(!(isMaster xor (id.bd.code % 2))) { if(verbose) printf("(!) pdoRequest: Invalid Request, no PDO sent \n"); return; }
     CANMessage* outputMsg = outboundBox.try_alloc();
     if(!outputMsg) if(verbose) { printf("(!) pdoRequest: Mail read error, no PDO sent \n"); return; }
     outputMsg->id = id.raw;
