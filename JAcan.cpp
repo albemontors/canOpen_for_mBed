@@ -38,7 +38,7 @@ void pdoHandler(CANMessage* inputMsg){
 
     CAN_Id id;
     id.raw = inputMsg->id;
-    if(!(isMaster && (id.bd.code % 2))) { if(verbose) printf("(!) pdoHandler: Invalid PDO received \n"); return; }
+    if(!(isMaster xor (id.bd.code % 2))) { if(verbose) printf("(!) pdoHandler: Invalid PDO received \n"); return; }
 
     if(verbose) printf("(S) pdoHandler: Started PDO sorting routine \n");
     PDO_Data data;
@@ -145,7 +145,7 @@ void can_irq(){
 
 void pdoSender(CAN_Id id){
 
-    if(!(isMaster && (id.bd.code % 2))) { if(verbose) printf("(!) pdoSender: Invalid Request, no PDO sent \n"); return; }
+    if(!(isMaster xor (id.bd.code % 2))) { if(verbose) printf("(!) pdoSender: Invalid Request, no PDO sent \n"); return; }
 
     CANMessage* outputMsg = outboundBox.try_alloc();
     if(!outputMsg) if(verbose) { printf("(!) pdoSender: Mail read error, no PDO sent \n"); return; }
@@ -164,7 +164,7 @@ void pdoSender(CAN_Id id){
 
 void pdoRequest(CAN_Id id){
     
-    if(isMaster && (id.bd.code % 2)) { if(verbose) printf("(!) pdoRequest: Invalid Request, no PDO sent \n"); return; }
+    if(isMaster xor (id.bd.code % 2)) { if(verbose) printf("(!) pdoRequest: Invalid Request, no PDO sent \n"); return; }
     CANMessage* outputMsg = outboundBox.try_alloc();
     if(!outputMsg) if(verbose) { printf("(!) pdoRequest: Mail read error, no PDO sent \n"); return; }
     outputMsg->id = id.raw;
