@@ -34,8 +34,8 @@ typedef struct {
 } PDO_Data;
 
 typedef struct {
-    uint16_t code : 4;
     uint16_t id : 7;
+    uint16_t code : 4;
     uint16_t reserved : 5;
 } CAN_Id_Breakdown;
 
@@ -56,6 +56,11 @@ typedef struct {
     PDO_Entry pdo[8];
 } PDO_Dictionary_Entry;
 
+typedef struct {
+    int16_t deviceId;
+    int16_t PDOId;
+} Dictionary_Id;
+
 void can_init();
 void can_setup(PDO_Dictionary_Entry* PDO_Dictionary_init, bool isMaster_init);
 CANMessage* can_allocate();
@@ -73,5 +78,6 @@ void pdoHandler(CANMessage* inputMsg);
 //void hbHandler(CANMessage* inputMsg);
 void pdoSender(CAN_Id id);
 void pdoRequest(CAN_Id id);
+Dictionary_Id dictionaryResolver(CAN_Id id);
 
 #endif

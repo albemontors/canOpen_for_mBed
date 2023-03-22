@@ -42,19 +42,14 @@ void pdoHandler(CANMessage* inputMsg){
     if(isMaster == (id.bd.code % 2)) { if(verbose) printf("(!) pdoHandler: Invalid PDO received \n"); return; }
 
     if(verbose) printf("(S) pdoHandler: Started PDO sorting routine \n");
-    PDO_Data data;
     if(!inputMsg->type){
-        for(int i = 0; i < 8; i++) data.u8[i] = inputMsg->data[i];
-        for(int i = 0; i < NODE_NUMBER; i++) // check the IDs
-            if(id.bd.id == PDO_Dictionary[i].id)
-                for(int j = 0; j < 8; j++){ // check the PDOs
-                    if(id.bd.code == PDO_Dictionary[i].pdo[j].code){
-                        PDO_Dictionary[i].pdo[j].data->u64 = data.u64;
-                        if(verbose) printf("(S) pdoHandler: Memory has been updated with PDO data \n");
-                        break;
-                    }
-                break;
-                }
+        Dictionary_Id dicId = dictionaryResolver(id);
+        if(dicId.deviceId != -1) {
+            for(int i = 0; i < 8; i++) PDO_Dictionary[dicId.deviceId].pdo[dicId.PDOId].data->u8[i] = inputMsg->data[i];
+            if(verbose) printf("(S) pdoHandler: Memory written from PDO data \n");
+        } else {
+            if(verbose) printf("(S) pdoHandler: PDO not recognized from dictionary \n");
+        }
     } else {
         isMaster ? id.bd.code-- : id.bd.code++;
         if(verbose) printf("(S) pdoHandler: Responding an RTR request \n");
@@ -79,16 +74,26 @@ void can_dumper(){
 void can_sorter(){
     // INIT
     CANMessage* inputMsg;
-    CANMessage* outputMsg;
     CAN_Id id;
 
     // CODE
     while(1){
         inputMsg = inboundBox.try_get_for(Kernel::wait_for_u32_forever);
         if(!inputMsg) printf("(!) can_sorter: Mail read error! \n");
-        if(verbose) printf("(S) can_sorter: Sorting a frame \n");
 
         id.raw = inputMsg->id;
+
+        if(verbose){      
+            PDO_Data data;
+            for(int i = 0; i < 8; i++) data.u8[i] = inputMsg->data[i];
+            printf("(S) can_sorter: Received a frame from %d with code %d \n", id.bd.id, id.bd.code);
+            printf("(S) can_sorter: data contained is %d %d %d %d \n",
+                data.u16[0],
+                data.u16[1],
+                data.u16[2],
+                data.u16[3]);
+        }
+        if(verbose) printf("(S) can_sorter: Sorting a frame \n");
         
         //code to sort the can packets
         switch(id.bd.code){
@@ -151,14 +156,17 @@ void pdoSender(CAN_Id id){
 
     CANMessage* outputMsg = outboundBox.try_alloc();
     if(!outputMsg) if(verbose) { printf("(!) pdoSender: Mail read error, no PDO sent \n"); return; }
-    for(int i = 0; i < 4; i++)
-        if(id.bd.id == PDO_Dictionary[i].id)
-            for(int j = 0; j < 4; j++)
-                if(id.bd.code == PDO_Dictionary[i].pdo[j].code)
-                    for(int k = 0; k < NODE_NUMBER; k++) outputMsg->data[k] = PDO_Dictionary[i].pdo[j].data->u8[k];
+    Dictionary_Id dicId = dictionaryResolver(id);
+    if(dicId.deviceId != -1) {
+        for(int i = 0; i < NODE_NUMBER; i++) outputMsg->data[i] = PDO_Dictionary[dicId.deviceId].pdo[dicId.PDOId].data->u8[i];
+        if(verbose) printf("(S) pdoSender: Memory written from PDO data \n");
+    } else {
+        if(verbose) printf("(S) pdoSender: PDO not recognized from dictionary \n");
+    }   
     outputMsg->id = id.raw;
     outputMsg->type = CANData;
     outputMsg->format = CANStandard;
+    outputMsg->len = 8;
     if(verbose) printf("(S) pdoSender: A PDO has been routed \n");
     outboundBox.put(outputMsg);
 
@@ -176,4 +184,23 @@ void pdoRequest(CAN_Id id){
     if(verbose) printf("(S) pdoRequest: A PDO has been routed \n");
     outboundBox.put(outputMsg);
 
+}
+
+Dictionary_Id dictionaryResolver(CAN_Id id){
+    Dictionary_Id return_value;
+    for(int i = 0; i < NODE_NUMBER; i++){
+        if(PDO_Dictionary[i].id == id.bd.id){
+            for(int j = 0; j < 8; j++){
+                if(PDO_Dictionary[i].pdo[j].code == id.bd.code){
+                    return_value.deviceId = i;
+                    return_value.PDOId = j;
+                    return return_value;
+                }
+            }
+            break;
+        }
+    }
+    return_value.deviceId = -1;
+    return_value.PDOId = -1;
+    return return_value;
 }
