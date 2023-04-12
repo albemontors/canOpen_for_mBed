@@ -10,6 +10,8 @@
 #define TD PB_9
 #define FREQUENCY 1000000 //in Hz
 
+#define SYNC 0x01
+
 #define TPDO1 0x03
 #define RPDO1 0x04
 #define TPDO2 0x05
@@ -63,7 +65,17 @@ typedef struct {
 
 void can_init();
 void can_setup(PDO_Dictionary_Entry* PDO_Dictionary_init, bool isMaster_init);
+/**
+ * Function to allocate a frame in memory
+ * @return pointer to the allocated frames
+ * @return 0 if send buffer is full
+ * @note after editing the frame invoke can_send(CANMessage*);
+ */
 CANMessage* can_allocate();
+/**
+ * Function to send a frame
+ * @param msg pointer to the frame to be sent
+ */
 void can_send(CANMessage* msg);
 void can_irq();
 void can_dumper();
@@ -76,7 +88,18 @@ void can_sender();
 void pdoHandler(CANMessage* inputMsg);
 //void sdoHandler(CANMessage* inputMsg);
 //void hbHandler(CANMessage* inputMsg);
+/**
+ * Function to send PDO packets from dictionary entries
+ * @param id Packet id [TPDO1, RPDO1, TPDO2...]
+ * @note Requested pdo needs to be set in dictionary
+ * @note Only sends allowed types
+ */
 void pdoSender(CAN_Id id);
+/**
+ * Function to send PDO RTR packets
+ * @param id Packet id [PDO1, PDO2, PDO3, PDO4]
+ * @note sorts the pdo type automatically
+ */
 void pdoRequest(CAN_Id id);
 Dictionary_Id dictionaryResolver(CAN_Id id);
 
