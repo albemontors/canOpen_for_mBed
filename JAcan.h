@@ -88,6 +88,7 @@ void can_sender();
 void pdoHandler(CANMessage* inputMsg);
 //void sdoHandler(CANMessage* inputMsg);
 //void hbHandler(CANMessage* inputMsg);
+
 /**
  * Function to send PDO packets from dictionary entries
  * @param id Packet id [TPDO1, RPDO1, TPDO2...]

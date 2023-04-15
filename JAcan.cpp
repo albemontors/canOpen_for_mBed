@@ -13,16 +13,20 @@ interface::CAN can(RD, TD, FREQUENCY);
 PDO_Dictionary_Entry PDO_Dictionary[NODE_NUMBER];
 bool isMaster;
 
-bool verbose = 0;
-bool verbose_low_level = 0;
+bool verbose = 1;
+bool verbose_low_level = 1;
 
 void can_setup(PDO_Dictionary_Entry* PDO_Dictionary_init, bool isMaster_init){
 // ====== PROGRAM INIT SECTION ========// nothing needs touching below here
+    can.frequency(FREQUENCY); 
     can.attach(can_irq);
-    can.monitor(0);
+    can.monitor(1);
     dumper.start(can_dumper);
+    dumper.set_priority(osPriorityHigh2);
     receiver.start(can_sorter);
+    receiver.set_priority(osPriorityHigh1);
     sender.start(can_sender);
+    sender.set_priority(osPriorityHigh);
     isMaster = isMaster_init;
     for(int i = 0; i < NODE_NUMBER; i++) PDO_Dictionary[i] = PDO_Dictionary_init[i];
     if(verbose_low_level) printf("(S) can_setup: Setup function have finished execution \n");
@@ -140,8 +144,9 @@ void can_sender(){
     while(1){
         outputMsg = outboundBox.try_get_for(Kernel::wait_for_u32_forever);
         if(!outputMsg) if(verbose_low_level) printf("(!) can_sender: Mail read error! \n");
+        can.mode(CAN::Normal);
         can.write(*outputMsg);
-        can.monitor(0);
+        can.monitor(1);
         outboundBox.free(outputMsg);
         if(verbose) printf("(S) can_sender: A frame was sent on the bus \n");
     }
@@ -160,7 +165,17 @@ void pdoSender(CAN_Id id){
     Dictionary_Id dicId = dictionaryResolver(id);
     if(dicId.deviceId != -1) {
         for(int i = 0; i < NODE_NUMBER; i++) outputMsg->data[i] = PDO_Dictionary[dicId.deviceId].pdo[dicId.PDOId].data->u8[i];
-        if(verbose) printf("(S) pdoSender: Memory written from PDO data \n");
+        if(verbose) printf("(S) pdoSender: Memory read from %d %d \n", dicId.deviceId, dicId.PDOId); 
+        if(verbose) printf("(S) pdoSender: Memory read is %d %d %d %d %d %d %d %d \n", 
+            outputMsg->data[0], 
+            outputMsg->data[1], 
+            outputMsg->data[2], 
+            outputMsg->data[3], 
+            outputMsg->data[4], 
+            outputMsg->data[5], 
+            outputMsg->data[6], 
+            outputMsg->data[7]);
+        if(verbose) printf("(S) pdoSender: PDO packed with data from the memory \n");
     } else {
         if(verbose) printf("(E) pdoSender: PDO not recognized from dictionary \n");
     }   
