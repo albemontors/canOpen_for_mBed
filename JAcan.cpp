@@ -1,26 +1,28 @@
 #include "JAcan.h"
+#include <cstdint>
 
 Mutex lock;
 Ticker timer;
 Thread dumper;
 Thread receiver;
 Thread sender;
-EventFlags dump;
+EventFlags flag;
 Mail<CANMessage, 16> inboundBox;
 Mail<CANMessage, 16> outboundBox;
 interface::CAN can(RD, TD, FREQUENCY);
 
 PDO_Dictionary_Entry PDO_Dictionary[NODE_NUMBER];
+Dictionary_Id Sync_Dictionary[8];
+
 bool isMaster;
+bool verbose = 0;
+bool verbose_low_level = 0;
 
-bool verbose = 1;
-bool verbose_low_level = 1;
-
-void can_setup(PDO_Dictionary_Entry* PDO_Dictionary_init, bool isMaster_init){
+void can_setup(PDO_Dictionary_Entry* PDO_Dictionary_init, bool isMaster_init, Dictionary_Id* Sync_Dictionary_init){
 // ====== PROGRAM INIT SECTION ========// nothing needs touching below here
     can.frequency(FREQUENCY); 
     can.attach(can_irq);
-    can.monitor(1);
+    //can.monitor(1);
     dumper.start(can_dumper);
     dumper.set_priority(osPriorityHigh2);
     receiver.start(can_sorter);
@@ -29,6 +31,7 @@ void can_setup(PDO_Dictionary_Entry* PDO_Dictionary_init, bool isMaster_init){
     sender.set_priority(osPriorityHigh);
     isMaster = isMaster_init;
     for(int i = 0; i < NODE_NUMBER; i++) PDO_Dictionary[i] = PDO_Dictionary_init[i];
+    for(int i = 0; i < SYNC_NUMBER; i++) Sync_Dictionary[i] = Sync_Dictionary_init[i];
     if(verbose_low_level) printf("(S) can_setup: Setup function have finished execution \n");
 }
 
@@ -46,9 +49,11 @@ void pdoHandler(CANMessage* inputMsg){
     id.raw = inputMsg->id;
     if(isMaster == (id.bd.code % 2)) { if(verbose_low_level) printf("(E) pdoHandler: Invalid PDO received \n"); return; }
 
+    flag.set(SYNCdictionaryResolver(id));
+
     if(verbose_low_level) printf("(S) pdoHandler: Started PDO sorting routine \n");
     if(!inputMsg->type){
-        Dictionary_Id dicId = dictionaryResolver(id);
+        Dictionary_Id dicId = PDOdictionaryResolver(id);
         if(dicId.deviceId != -1) {
             for(int i = 0; i < 8; i++) PDO_Dictionary[dicId.deviceId].pdo[dicId.PDOId].data->u8[i] = inputMsg->data[i];
             if(verbose_low_level) printf("(S) pdoHandler: Memory written from PDO data \n");
@@ -66,8 +71,8 @@ void pdoHandler(CANMessage* inputMsg){
 
 void can_dumper(){
     while(1){
-        dump.wait_any(1);
-        dump.clear(1);
+        flag.wait_any(1);
+        flag.clear(1);
         CANMessage* msg = inboundBox.try_alloc_for(Kernel::wait_for_u32_forever);
         if(msg) can.read(*msg);
         else if(verbose_low_level) printf("(!) can_dumper: Mail alloc error \n");
@@ -146,14 +151,14 @@ void can_sender(){
         if(!outputMsg) if(verbose_low_level) printf("(!) can_sender: Mail read error! \n");
         can.mode(CAN::Normal);
         can.write(*outputMsg);
-        can.monitor(1);
+        //can.monitor(1);
         outboundBox.free(outputMsg);
         if(verbose) printf("(S) can_sender: A frame was sent on the bus \n");
     }
 }
 
 void can_irq(){
-    dump.set(1);
+    flag.set(1);
 }
 
 void pdoSender(CAN_Id id){
@@ -162,7 +167,7 @@ void pdoSender(CAN_Id id){
 
     CANMessage* outputMsg = outboundBox.try_alloc();
     if(!outputMsg) if(verbose_low_level) { printf("(!) pdoSender: Mail read error, no PDO sent \n"); return; }
-    Dictionary_Id dicId = dictionaryResolver(id);
+    Dictionary_Id dicId = PDOdictionaryResolver(id);
     if(dicId.deviceId != -1) {
         for(int i = 0; i < NODE_NUMBER; i++) outputMsg->data[i] = PDO_Dictionary[dicId.deviceId].pdo[dicId.PDOId].data->u8[i];
         if(verbose) printf("(S) pdoSender: Memory read from %d %d \n", dicId.deviceId, dicId.PDOId); 
@@ -203,7 +208,23 @@ void pdoRequest(CAN_Id id){
 
 }
 
-Dictionary_Id dictionaryResolver(CAN_Id id){
+void executeSync(){
+    CANMessage* sync = can_allocate();
+    CAN_Id id;
+    id.bd.id = 0x00;    //put the correct node id
+    id.bd.code = SYNC; //put the correct PDO id
+    sync->id = id.raw;
+    sync->type = CANData;           //set this to "CANRemote" to send an RTR packet
+    sync->format = CANStandard;     //this sets the 11 bit address mode
+    sync->len = 0;
+    can_send(sync);
+    // wait for all flags from pdos to come back
+    //flag.wait_any_for(pow(SYNC_NUMBER + 1, 2)-2, (Kernel::Clock::duration_u32) 100ms, true);
+    //flag.clear(pow(SYNC_NUMBER + 1, 2)-2);
+    //flag.wait_all(pow(SYNC_NUMBER + 1, 2)-2);
+}
+
+Dictionary_Id PDOdictionaryResolver(CAN_Id id){
     Dictionary_Id return_value;
     for(int i = 0; i < NODE_NUMBER; i++){
         if(PDO_Dictionary[i].id == id.bd.id){
@@ -220,4 +241,15 @@ Dictionary_Id dictionaryResolver(CAN_Id id){
     return_value.deviceId = -1;
     return_value.PDOId = -1;
     return return_value;
+}
+
+uint32_t SYNCdictionaryResolver(CAN_Id id){
+    for(int i = 0; i < SYNC_NUMBER; i++){
+        if(Sync_Dictionary[i].deviceId == id.bd.id){
+            if(Sync_Dictionary[i].PDOId == id.bd.code){
+                    return pow(i+1, 2);
+            }
+        }
+    }
+    return 0;
 }

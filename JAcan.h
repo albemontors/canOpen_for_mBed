@@ -4,7 +4,8 @@
 #include "mbed.h"
 #include <cstdint>
 
-#define NODE_NUMBER 16
+#define NODE_NUMBER 2
+#define SYNC_NUMBER 2
 
 #define RD PB_8
 #define TD PB_9
@@ -64,7 +65,7 @@ typedef struct {
 } Dictionary_Id;
 
 void can_init();
-void can_setup(PDO_Dictionary_Entry* PDO_Dictionary_init, bool isMaster_init);
+void can_setup(PDO_Dictionary_Entry* PDO_Dictionary_init, bool isMaster_init, Dictionary_Id* Sync_Dictionary_init);
 /**
  * Function to allocate a frame in memory
  * @return pointer to the allocated frames
@@ -102,6 +103,12 @@ void pdoSender(CAN_Id id);
  * @note sorts the pdo type automatically
  */
 void pdoRequest(CAN_Id id);
-Dictionary_Id dictionaryResolver(CAN_Id id);
+/**
+ * Sends a sync packet
+ * @note blocks untill all responses are received
+ */
+void executeSync();
+Dictionary_Id PDOdictionaryResolver(CAN_Id id);
+uint32_t SYNCdictionaryResolver(CAN_Id id);
 
 #endif
