@@ -219,7 +219,7 @@ void executeSync(){
     sync->len = 0;
     can_send(sync);
     // wait for all flags from pdos to come back
-    //flag.wait_any_for(pow(SYNC_NUMBER + 1, 2)-2, (Kernel::Clock::duration_u32) 100ms, true);
+    flag.wait_all_for(pow(2, SYNC_NUMBER + 1)-2, (Kernel::Clock::duration_u32) 100ms, true);
     //flag.clear(pow(SYNC_NUMBER + 1, 2)-2);
     //flag.wait_all(pow(SYNC_NUMBER + 1, 2)-2);
 }
@@ -247,7 +247,7 @@ uint32_t SYNCdictionaryResolver(CAN_Id id){
     for(int i = 0; i < SYNC_NUMBER; i++){
         if(Sync_Dictionary[i].deviceId == id.bd.id){
             if(Sync_Dictionary[i].PDOId == id.bd.code){
-                    return pow(i+1, 2);
+                    return pow(2, i+1);
             }
         }
     }

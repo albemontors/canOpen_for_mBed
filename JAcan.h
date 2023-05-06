@@ -4,8 +4,8 @@
 #include "mbed.h"
 #include <cstdint>
 
-#define NODE_NUMBER 2
-#define SYNC_NUMBER 2
+#define NODE_NUMBER 5
+#define SYNC_NUMBER 4
 
 #define RD PB_8
 #define TD PB_9
