@@ -5,7 +5,7 @@
 #include <cstdint>
 
 #define NODE_NUMBER 5
-#define SYNC_NUMBER 4
+#define SYNC_NUMBER 5
 
 #define RD PB_8
 #define TD PB_9

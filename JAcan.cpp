@@ -169,17 +169,17 @@ void pdoSender(CAN_Id id){
     if(!outputMsg) if(verbose_low_level) { printf("(!) pdoSender: Mail read error, no PDO sent \n"); return; }
     Dictionary_Id dicId = PDOdictionaryResolver(id);
     if(dicId.deviceId != -1) {
-        for(int i = 0; i < NODE_NUMBER; i++) outputMsg->data[i] = PDO_Dictionary[dicId.deviceId].pdo[dicId.PDOId].data->u8[i];
+        for(int i = 0; i < 8; i++) outputMsg->data[i] = PDO_Dictionary[dicId.deviceId].pdo[dicId.PDOId].data->u8[i];
         if(verbose) printf("(S) pdoSender: Memory read from %d %d \n", dicId.deviceId, dicId.PDOId); 
-        if(verbose) printf("(S) pdoSender: Memory read is %d %d %d %d %d %d %d %d \n", 
-            outputMsg->data[0], 
+        if(verbose) printf("(S) pdoSender: Memory read is 0x%02X%02X 0x%02X%02X 0x%02X%02X 0x%02X%02X \n", 
             outputMsg->data[1], 
-            outputMsg->data[2], 
+            outputMsg->data[0], 
             outputMsg->data[3], 
-            outputMsg->data[4], 
+            outputMsg->data[2], 
             outputMsg->data[5], 
-            outputMsg->data[6], 
-            outputMsg->data[7]);
+            outputMsg->data[4], 
+            outputMsg->data[7], 
+            outputMsg->data[6]);
         if(verbose) printf("(S) pdoSender: PDO packed with data from the memory \n");
     } else {
         if(verbose) printf("(E) pdoSender: PDO not recognized from dictionary \n");
